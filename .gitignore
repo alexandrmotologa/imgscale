@@ -5,7 +5,7 @@
 *.so
 *.dylib
 bin/
-dist/
+/dist/
 
 # Test binary, built with `go test -c`
 *.test
@@ -19,6 +19,7 @@ go.work
 # Node.js
 web/node_modules/
 web/dist/
+!internal/ui/dist/**
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

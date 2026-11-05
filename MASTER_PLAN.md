@@ -182,54 +182,54 @@ $$\text{Signature} = \text{Hex}(\text{HMAC-SHA256}(\text{SecretKey}, \text{Path}
 - [x] Create public GitHub repository `alexandrmotologa/imgscale`.
 - [x] Configure repository description and 14 topics covering all four required dimensions.
 - [x] Synchronize portfolio registries (`mtlg.site` and `mtlglabs.space`) in active development.
-- [ ] Initialize Go module (`github.com/alexandrmotologa/imgscale`).
-- [ ] Add MIT License, standard `.gitignore`, and initial project documentation.
+- [x] Initialize Go module (`github.com/alexandrmotologa/imgscale`).
+- [x] Add MIT License, standard `.gitignore`, and initial project documentation.
 
 ### Task 2: Core Image Processing Engine
-- [ ] Implement `internal/engine/resizer.go` with Lanczos3, Catmull-Rom, Linear, Box, and Nearest-Neighbor filters.
-- [ ] Implement `internal/engine/crop.go` for cover, contain, fill, inside, and outside bounding math.
-- [ ] Implement `internal/engine/entropy.go` using Sobel kernels for visual saliency and focal window detection.
-- [ ] Implement `internal/engine/filters.go` for blur, sharpen, grayscale, and rotation.
-- [ ] Implement `internal/engine/format.go` for WebP, JPEG, PNG, and GIF encoding/decoding.
-- [ ] Implement `internal/engine/transformer.go` pipeline orchestrator.
-- [ ] Create synthetic test images and unit tests validating image dimensions, aspect ratios, and format outputs.
+- [x] Implement `internal/engine/resizer.go` with Lanczos3, Catmull-Rom, Linear, Box, and Nearest-Neighbor filters.
+- [x] Implement `internal/engine/crop.go` for cover, contain, fill, inside, and outside bounding math.
+- [x] Implement `internal/engine/entropy.go` using Sobel kernels for visual saliency and focal window detection.
+- [x] Implement `internal/engine/filters.go` for blur, sharpen, grayscale, and rotation.
+- [x] Implement `internal/engine/format.go` for WebP, JPEG, PNG, and GIF encoding/decoding.
+- [x] Implement `internal/engine/transformer.go` pipeline orchestrator.
+- [x] Create synthetic test images and unit tests validating image dimensions, aspect ratios, and format outputs.
 
 ### Task 3: Storage Layer and SSRF Protection
-- [ ] Define `internal/storage/source.go` generic image storage interface.
-- [ ] Implement `internal/storage/local.go` for directory based image retrieval.
-- [ ] Implement `internal/storage/ssrf.go` with strict network dialer blocking private IPs and cloud metadata addresses.
-- [ ] Implement `internal/storage/http_upstream.go` for remote image fetching with domain whitelists.
-- [ ] Implement `internal/storage/s3.go` for AWS S3, Cloudflare R2, and MinIO compatibilities.
-- [ ] Add unit tests for storage readers and SSRF network rejection rules.
+- [x] Define `internal/storage/source.go` generic image storage interface.
+- [x] Implement `internal/storage/local.go` for directory based image retrieval.
+- [x] Implement `internal/storage/ssrf.go` with strict network dialer blocking private IPs and cloud metadata addresses.
+- [x] Implement `internal/storage/http_upstream.go` for remote image fetching with domain whitelists.
+- [x] Implement `internal/storage/s3.go` for AWS S3, Cloudflare R2, and MinIO compatibilities.
+- [x] Add unit tests for storage readers and SSRF network rejection rules.
 
 ### Task 4: Two-Tier Caching and Singleflight Deduplication
-- [ ] Implement `internal/cache/l1_memory.go` (sharded concurrent LRU cache with byte limits).
-- [ ] Implement `internal/cache/l2_disk.go` with atomic temporary writes and two-level directory sharding (`aa/bb/aabb...`).
-- [ ] Implement `internal/cache/sweeper.go` background goroutine for disk size quota enforcement and TTL purging.
-- [ ] Implement `internal/cache/etag.go` for RFC 9111 conditional request validation (`ETag` and `If-None-Match`).
-- [ ] Add singleflight request deduplication to prevent thundering herd during cache misses.
-- [ ] Unit test L1/L2 cache operations, evictions, and concurrency.
+- [x] Implement `internal/cache/l1_memory.go` (sharded concurrent LRU cache with byte limits).
+- [x] Implement `internal/cache/l2_disk.go` with atomic temporary writes and two-level directory sharding (`aa/bb/aabb...`).
+- [x] Implement `internal/cache/sweeper.go` background goroutine for disk size quota enforcement and TTL purging.
+- [x] Implement `internal/cache/etag.go` for RFC 9111 conditional request validation (`ETag` and `If-None-Match`).
+- [x] Add singleflight request deduplication to prevent thundering herd during cache misses.
+- [x] Unit test L1/L2 cache operations, evictions, and concurrency.
 
 ### Task 5: HTTP Gateway, Routing, and Security
-- [ ] Implement `internal/config/config.go` with environment variable and CLI flag support.
-- [ ] Implement `internal/server/middleware.go` with HMAC-SHA256 signature verification, CORS, and request metrics.
-- [ ] Implement `internal/server/router.go` mounting `/v1/images/*`, `/v1/entropy/*`, `/healthz`, and `/api/stats`.
-- [ ] Implement `internal/server/handlers.go` with `Accept` header format negotiation and response streaming.
-- [ ] Implement CLI commands in `cmd/imgscale/main.go` (`serve`, `sign`, `bench`).
+- [x] Implement `internal/config/config.go` with environment variable and CLI flag support.
+- [x] Implement `internal/server/middleware.go` with HMAC-SHA256 signature verification, CORS, and request metrics.
+- [x] Implement `internal/server/router.go` mounting `/v1/images/*`, `/v1/entropy/*`, `/healthz`, and `/api/stats`.
+- [x] Implement `internal/server/handlers.go` with `Accept` header format negotiation and response streaming.
+- [x] Implement CLI commands in `cmd/imgscale/main.go` (`serve`, `sign`, `bench`).
 
 ### Task 6: Embedded React 19 Visual Studio
-- [ ] Scaffold Vite + React 19 project in `web/` with TypeScript and Tailwind CSS.
-- [ ] Build `BeforeAfterDiff.tsx` interactive split-slider component.
-- [ ] Build `UrlBuilder.tsx` query parameter tuner with real-time preview and exportable code snippets.
-- [ ] Build `SaliencyOverlay.tsx` rendering Sobel edge detection heatmaps.
-- [ ] Build `CacheMetrics.tsx` displaying live hit ratios, memory usage, and transform timings.
-- [ ] Build `SourceExplorer.tsx` with curated test images and custom URL input.
-- [ ] Connect React 19 static build to Go via `//go:embed` mounted at `/ui` and `/`.
+- [x] Scaffold Vite + React 19 project in `web/` with TypeScript and Tailwind CSS.
+- [x] Build `BeforeAfterDiff.tsx` interactive split-slider component.
+- [x] Build `UrlBuilder.tsx` query parameter tuner with real-time preview and exportable code snippets.
+- [x] Build `SaliencyOverlay.tsx` rendering Sobel edge detection heatmaps.
+- [x] Build `CacheMetrics.tsx` displaying live hit ratios, memory usage, and transform timings.
+- [x] Build `SourceExplorer.tsx` with curated test images and custom URL input.
+- [x] Connect React 19 static build to Go via `//go:embed` mounted at `/ui` and `/`.
 
 ### Task 7: Verification, Documentation, and Release
-- [ ] Run end-to-end tests across all transformation combinations and cache paths.
-- [ ] Benchmark RPS and latency on standard image datasets.
-- [ ] Write documentation in `docs/api.md`, `docs/deployment.md`, and `docs/security.md`.
-- [ ] Write humanized `README.md` without superlatives or ungrounded claims.
-- [ ] Build multi-stage `Dockerfile` and `Makefile`.
-- [ ] Verify test suite passes with 100% success rate.
+- [x] Run end-to-end tests across all transformation combinations and cache paths.
+- [x] Benchmark RPS and latency on standard image datasets.
+- [x] Write documentation in `docs/api.md`, `docs/deployment.md`, and `docs/security.md`.
+- [x] Write humanized `README.md` without superlatives or ungrounded claims.
+- [x] Build multi-stage `Dockerfile` and `Makefile`.
+- [x] Verify test suite passes with 100% success rate.
