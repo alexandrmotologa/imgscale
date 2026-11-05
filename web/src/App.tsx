@@ -24,6 +24,11 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signature, setSignature] = useState<string>('');
+  const [origMeta, setOrigMeta] = useState<{ bytes: number; width: number; height: number }>({
+    bytes: 0,
+    width: 0,
+    height: 0,
+  });
 
   const [params, setParams] = useState<TransformParams>({
     width: 400,
@@ -114,6 +119,31 @@ export const App: React.FC = () => {
     return `${window.location.origin}/v1/images/${selectedPath}?fit=inside`;
   }, [selectedPath]);
 
+  // Load and measure exact properties of the raw original image
+  useEffect(() => {
+    let active = true;
+    fetch(originalUrl)
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (!blob || !active) return;
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+        img.onload = () => {
+          if (active) {
+            setOrigMeta({
+              bytes: blob.size,
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+            });
+          }
+        };
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [originalUrl]);
+
   // Measure telemetry by issuing a GET request
   const refreshTelemetry = useCallback(async () => {
     try {
@@ -132,10 +162,10 @@ export const App: React.FC = () => {
         if (contentType.includes('application/json')) {
           const json = await res.json();
           setTelemetry({
-            originalBytes: 150 * 1024,
+            originalBytes: origMeta.bytes,
             transformedBytes: JSON.stringify(json).length,
-            originalWidth: 800,
-            originalHeight: 800,
+            originalWidth: origMeta.width,
+            originalHeight: origMeta.height,
             outputWidth: json.width || 16,
             outputHeight: json.height || 16,
             durationMs: durationHeader ? parseFloat(durationHeader) : elapsed,
@@ -153,10 +183,10 @@ export const App: React.FC = () => {
         img.src = URL.createObjectURL(blob);
         img.onload = () => {
           setTelemetry({
-            originalBytes: 150 * 1024,
+            originalBytes: origMeta.bytes,
             transformedBytes: blob.size,
-            originalWidth: 800,
-            originalHeight: 800,
+            originalWidth: origMeta.width,
+            originalHeight: origMeta.height,
             outputWidth: img.naturalWidth,
             outputHeight: img.naturalHeight,
             durationMs: durationHeader ? parseFloat(durationHeader) : elapsed,
