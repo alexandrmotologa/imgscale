@@ -52,8 +52,15 @@ func SetupRouter(h *GatewayHandler, uiFS fs.FS) http.Handler {
 			http.Redirect(w, r, "/ui/", http.StatusFound)
 		})
 
+		// Serve assets directly at /assets/* as well for fallback
+		r.Handle("/assets/*", fileServer)
+
 		// Serve static files under /ui/
 		r.Get("/ui*", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/ui" {
+				http.Redirect(w, r, "/ui/", http.StatusFound)
+				return
+			}
 			path := strings.TrimPrefix(r.URL.Path, "/ui")
 			if path == "" || path == "/" {
 				// Serve index.html

@@ -86,7 +86,7 @@ export const UrlBuilder: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col gap-5 p-4 bg-zinc-900/60 rounded-xl border border-zinc-800/80 shadow-xl overflow-y-auto max-h-[calc(100vh-140px)]">
+    <div className="flex flex-col gap-5 p-4 bg-zinc-900/60 rounded-xl border border-zinc-800/80 shadow-xl overflow-y-auto lg:max-h-[calc(100vh-140px)]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div className="flex items-center gap-2">

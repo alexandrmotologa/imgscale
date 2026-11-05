@@ -1,0 +1,256 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <!-- Optics & Core Lighting -->
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="amber-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+
+    <!-- Obsidian & Slate Shading Scale -->
+    <linearGradient id="facet-bright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+
+    <linearGradient id="facet-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+
+    <linearGradient id="facet-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <linearGradient id="facet-deep" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#06090f"/>
+    </linearGradient>
+
+    <filter id="subtle-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.16" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip)">
+    <g transform="translate(512, 512)" filter="url(#subtle-shadow)">
+
+      <!-- Hexagonal Architectural Gateway Frame -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="38" stroke-linejoin="round" />
+
+      <!-- Inner Cyan Dashed Telemetry Ring -->
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#00f5ff" stroke-width="4" opacity="0.45" stroke-dasharray="16, 12" />
+
+      <!-- Optical Crosshair Telemetry Indicators -->
+      <line x1="0" y1="-370" x2="0" y2="-340" stroke="#00f5ff" stroke-width="3" opacity="0.7"/>
+      <line x1="0" y1="370" x2="0" y2="340" stroke="#00f5ff" stroke-width="3" opacity="0.7"/>
+      <line x1="-320" y1="0" x2="-290" y2="0" stroke="#00f5ff" stroke-width="3" opacity="0.7"/>
+      <line x1="320" y1="0" x2="290" y2="0" stroke="#00f5ff" stroke-width="3" opacity="0.7"/>
+
+      <!-- ======================================================== -->
+      <!-- PEREGRINE FALCON - AERODYNAMIC APEX PREDATOR SILHOUETTE  -->
+      <!-- ======================================================== -->
+
+      <!-- Watertight Base Silhouette: Crown plumes, ear tufts, flared wings -->
+      <path d="
+        M 0 -330
+        L 50 -290
+        L 95 -310
+        L 135 -240
+        L 190 -220
+        L 230 -130
+        L 260 -20
+        L 280 80
+        L 260 190
+        L 200 270
+        L 110 320
+        L 0 345
+        L -110 320
+        L -200 270
+        L -260 190
+        L -280 80
+        L -260 -20
+        L -230 -130
+        L -190 -220
+        L -135 -240
+        L -95 -310
+        L -50 -290
+        Z
+      " fill="#06090f" />
+
+      <!-- ======================================================== -->
+      <!-- TOP CROWN & AERIAL CREST PLUMES                          -->
+      <!-- ======================================================== -->
+      <!-- Center Crown Keel -->
+      <polygon points="0,-330 -50,-290 0,-240" fill="url(#facet-mid)" />
+      <polygon points="0,-330 50,-290 0,-240" fill="url(#facet-bright)" />
+
+      <!-- Outer Crest Horns / Feathers -->
+      <polygon points="50,-290 95,-310 65,-230 0,-240" fill="url(#facet-mid)" />
+      <polygon points="-50,-290 -95,-310 -65,-230 0,-240" fill="url(#facet-dark)" />
+
+      <polygon points="95,-310 135,-240 100,-190 65,-230" fill="url(#facet-bright)" />
+      <polygon points="-95,-310 -135,-240 -100,-190 -65,-230" fill="url(#facet-deep)" />
+
+      <polygon points="135,-240 190,-220 145,-155 100,-190" fill="url(#facet-mid)" />
+      <polygon points="-135,-240 -190,-220 -145,-155 -100,-190" fill="url(#facet-dark)" />
+
+      <!-- Forehead Triangular Plate -->
+      <polygon points="0,-240 65,-230 45,-140 0,-155" fill="url(#facet-bright)" />
+      <polygon points="0,-240 -65,-230 -45,-140 0,-155" fill="url(#facet-mid)" />
+
+      <!-- Supraorbital Brow Shelf (Heavy Predator Overhang) -->
+      <!-- The brow arches aggressively DOWN toward beak and UP toward ears -->
+      <polygon points="0,-155 45,-140 100,-190 120,-115 40,-95" fill="url(#facet-bright)" />
+      <polygon points="0,-155 -45,-140 -100,-190 -120,-115 -40,-95" fill="url(#facet-dark)" />
+
+      <polygon points="100,-190 145,-155 175,-85 120,-115" fill="url(#facet-mid)" />
+      <polygon points="-100,-190 -145,-155 -175,-85 -120,-115" fill="url(#facet-deep)" />
+
+      <!-- ======================================================== -->
+      <!-- PREDATOR OPTICS: SHARP FORWARD-FOCUSED EYES              -->
+      <!-- ======================================================== -->
+      <!-- Deep Recessed Sockets: Canted up and out (/) () -->
+      <polygon points="40,-95 120,-115 105,-65 48,-60" fill="#020408" />
+      <polygon points="-40,-95 -120,-115 -105,-65 -48,-60" fill="#020408" />
+
+      <!-- Electric Cyan Glowing Almond Iris -->
+      <polygon points="45,-90 115,-110 100,-70 52,-65" fill="url(#cyan-glow)" />
+      <polygon points="-45,-90 -115,-110 -100,-70 -52,-65" fill="url(#cyan-glow)" />
+
+      <!-- Amber Sclera Ring Trim -->
+      <polygon points="90,-102 115,-110 102,-75 88,-85" fill="url(#amber-glow)" />
+      <polygon points="-90,-102 -115,-110 -102,-75 -88,-85" fill="url(#amber-glow)" />
+
+      <!-- Slit Focus Pupil (Aperture) -->
+      <polygon points="68,-92 78,-95 74,-75 66,-73" fill="#020408" />
+      <polygon points="-68,-92 -78,-95 -74,-75 -66,-73" fill="#020408" />
+
+      <!-- Catchlight Pixel -->
+      <circle cx="78" cy="-86" r="3" fill="#ffffff" />
+      <circle cx="-78" cy="-86" r="3" fill="#ffffff" />
+
+      <!-- ======================================================== -->
+      <!-- HOOKED RAPTOR BEAK & GOLDEN CERE                         -->
+      <!-- ======================================================== -->
+      <!-- Upper Beak Bridge (Culmen) -->
+      <polygon points="0,-155 40,-95 25,-40 0,-45" fill="url(#facet-bright)" />
+      <polygon points="0,-155 -40,-95 -25,-40 0,-45" fill="url(#facet-mid)" />
+
+      <!-- Golden Amber Cere (Species mark around nostrils) -->
+      <polygon points="0,-45 25,-40 28,15 0,10" fill="url(#amber-glow)" />
+      <polygon points="0,-45 -25,-40 -28,15 0,10" fill="#f59e0b" />
+
+      <!-- Upper Hooked Beak (Fierce curved raptor profile) -->
+      <polygon points="0,10 28,15 22,85 0,120" fill="url(#facet-bright)" />
+      <polygon points="0,10 -28,15 -22,85 0,120" fill="url(#facet-dark)" />
+
+      <!-- Tomial Tooth & Sharp Hook Apex -->
+      <polygon points="0,120 22,85 10,145 0,165" fill="#38bdf8" />
+      <polygon points="0,120 -22,85 -10,145 0,165" fill="url(#cyan-glow)" />
+
+      <!-- Hook Tip Under-Cut -->
+      <polygon points="0,165 10,145 0,150" fill="#0284c7" />
+      <polygon points="0,165 -10,145 0,150" fill="#0284c7" />
+
+      <!-- Lower Mandible & Mouth Gape (Dark Recessed) -->
+      <polygon points="0,95 20,75 14,115 0,120" fill="#020408" />
+      <polygon points="0,95 -20,75 -14,115 0,120" fill="#020408" />
+
+      <!-- ======================================================== -->
+      <!-- FALCON CHEEKS & MALAR STRIPES (THE PEREGRINE MUSTACHE)  -->
+      <!-- ======================================================== -->
+      <!-- Sub-orbital White/Slate Cheek Flash -->
+      <polygon points="48,-60 105,-65 135,-5 65,10 28,15" fill="url(#facet-bright)" />
+      <polygon points="-48,-60 -105,-65 -135,-5 -65,10 -28,15" fill="url(#facet-mid)" />
+
+      <!-- Heavy Black Malar Mustache Stripe (True Falcon Mark) -->
+      <polygon points="105,-65 175,-85 210,5 135,-5" fill="url(#facet-deep)" />
+      <polygon points="-105,-65 -175,-85 -210,5 -135,-5" fill="url(#facet-deep)" />
+
+      <polygon points="135,-5 210,5 180,95 110,80" fill="url(#facet-deep)" />
+      <polygon points="-135,-5 -210,5 -180,95 -110,80" fill="url(#facet-deep)" />
+
+      <!-- Lateral Ear / Auricular Feathers -->
+      <polygon points="190,-220 230,-130 175,-85 145,-155" fill="url(#facet-mid)" />
+      <polygon points="-190,-220 -230,-130 -175,-85 -145,-155" fill="url(#facet-deep)" />
+
+      <polygon points="230,-130 260,-20 210,5 175,-85" fill="url(#facet-dark)" />
+      <polygon points="-230,-130 -260,-20 -210,5 -175,-85" fill="url(#facet-deep)" />
+
+      <!-- ======================================================== -->
+      <!-- THROAT GORGET & EXPANSIVE BREAST MANTLE                 -->
+      <!-- ======================================================== -->
+      <!-- Chin & Throat Plumage -->
+      <polygon points="0,120 14,115 65,10 28,15" fill="url(#facet-dark)" />
+      <polygon points="0,120 -14,115 -65,10 -28,15" fill="url(#facet-deep)" />
+
+      <polygon points="0,120 14,115 45,150 0,170" fill="url(#facet-dark)" />
+      <polygon points="0,120 -14,115 -45,150 0,170" fill="url(#facet-deep)" />
+
+      <polygon points="65,10 110,80 45,150 14,115" fill="url(#facet-mid)" />
+      <polygon points="-65,10 -110,80 -45,150 -14,115" fill="url(#facet-dark)" />
+
+      <!-- Broad Pectoral Armor Plates (Sweeping Down to Wing Folds) -->
+      <polygon points="0,170 45,150 110,185 0,225" fill="url(#facet-bright)" />
+      <polygon points="0,170 -45,150 -110,185 0,225" fill="url(#facet-dark)" />
+
+      <polygon points="110,80 180,95 170,185 110,185" fill="url(#facet-dark)" />
+      <polygon points="-110,80 -180,95 -170,185 -110,185" fill="url(#facet-deep)" />
+
+      <!-- Flared Wing Shoulders -->
+      <polygon points="260,-20 280,80 220,115 210,5" fill="url(#facet-mid)" />
+      <polygon points="-260,-20 -280,80 -220,115 -210,5" fill="url(#facet-deep)" />
+
+      <polygon points="280,80 260,190 205,195 180,95 220,115" fill="url(#facet-dark)" />
+      <polygon points="-280,80 -260,190 -205,195 -180,95 -220,115" fill="url(#facet-deep)" />
+
+      <!-- Lower Wing Mantle & Tail Shield Base -->
+      <polygon points="0,225 110,185 130,265 0,285" fill="url(#facet-mid)" />
+      <polygon points="0,225 -110,185 -130,265 0,285" fill="url(#facet-deep)" />
+
+      <polygon points="110,185 170,185 200,270 130,265" fill="url(#facet-dark)" />
+      <polygon points="-110,185 -170,185 -200,270 -130,265" fill="url(#facet-deep)" />
+
+      <polygon points="260,190 200,270 170,185 205,195" fill="url(#facet-deep)" />
+      <polygon points="-260,190 -200,270 -170,185 -205,195" fill="url(#facet-deep)" />
+
+      <!-- Bottom Flanks & Tail Shield Apex -->
+      <polygon points="0,285 130,265 110,320 0,345" fill="url(#facet-dark)" />
+      <polygon points="0,285 -130,265 -110,320 0,345" fill="url(#facet-deep)" />
+
+      <polygon points="130,265 200,270 110,320" fill="url(#facet-deep)" />
+      <polygon points="-130,265 -200,270 -110,320" fill="url(#facet-deep)" />
+
+      <!-- Cyan Telemetry Node (Aperture Reticle on Chest) -->
+      <polygon points="0,178 15,192 0,206 -15,192" fill="url(#cyan-glow)" />
+
+    </g>
+  </g>
+</svg>

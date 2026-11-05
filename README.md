@@ -1,8 +1,51 @@
-# imgscale
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="imgscale Logo" width="130" style="border-radius: 24px;" />
+</p>
 
-Self-hosted dynamic image resizing, WebP/AVIF transcoding, and smart crop gateway with under 35MB idle memory footprint.
+<h1 align="center">imgscale</h1>
+
+<p align="center">
+  <strong>Self-hosted dynamic image resizing, WebP/AVIF transcoding, and smart crop gateway with under 35MB idle memory footprint.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/alexandrmotologa/imgscale/actions/workflows/ci.yml"><img src="https://github.com/alexandrmotologa/imgscale/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <img src="https://img.shields.io/badge/go-1.23+-00ADD8.svg" alt="Go Version" />
+  <img src="https://img.shields.io/badge/memory-%3C%2035MB%20RAM-emerald.svg" alt="Memory Footprint" />
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />
+</p>
 
 `imgscale` is an alternative to Cloudinary, Imgix, and Thumbor packaged as a single Go binary with an embedded React 19 visual studio. It connects directly to local storage, AWS S3, Cloudflare R2, MinIO, or remote HTTP origins, resizing and transcoding images on the fly with sub-35ms processing latencies.
+
+<p align="center">
+  <img src="docs/images/imgscale_demo.gif?raw=true" alt="imgscale Live Visual Studio Demo" width="100%" />
+</p>
+
+---
+
+## Visual Studio & Live Telemetry
+
+`imgscale` includes an embedded React 19 studio accessible at `/ui`, featuring side-by-side comparison, interactive Sobel entropy maps, and real-time cache analytics.
+
+<p align="center">
+  <img src="docs/images/imgscale_studio_desktop.png?raw=true" alt="imgscale Desktop Studio Cockpit" width="100%" />
+</p>
+
+### Saliency Edge Entropy & Visual Slicing
+
+When `gravity=smart` is requested, the engine computes horizontal and vertical image gradients using 3x3 Sobel convolution kernels to locate the region of highest visual detail.
+
+<p align="center">
+  <img src="docs/images/imgscale_saliency_heatmap.png?raw=true" alt="Sobel Saliency Gradient Heatmap" width="100%" />
+</p>
+
+### Responsive Multi-Device Adaptability
+
+The visual studio automatically adapts to mobile viewports, allowing on-the-go parameter tuning and responsive asset inspection.
+
+<p align="center">
+  <img src="docs/images/imgscale_studio_mobile.png?raw=true" alt="imgscale Mobile Responsive View" width="360" />
+</p>
 
 ---
 
@@ -73,7 +116,7 @@ make build
 ```
 
 The gateway listens at `http://localhost:8080`.
-Open `http://localhost:8080/ui` in your browser to access the visual studio.
+Open `http://localhost:8080/ui/` in your browser to access the visual studio.
 
 ### Test Image Transformation
 

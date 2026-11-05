@@ -18,7 +18,10 @@ const GithubIcon = () => (
 );
 
 export const App: React.FC = () => {
-  const [selectedPath, setSelectedPath] = useState<string>('portrait.png');
+  const [selectedPath, setSelectedPath] = useState<string>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('image') || 'portrait.png';
+  });
   const [presets, setPresets] = useState<PresetItem[]>([]);
   const [telemetry, setTelemetry] = useState<ImageTelemetry | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,29 +33,32 @@ export const App: React.FC = () => {
     height: 0,
   });
 
-  const [params, setParams] = useState<TransformParams>({
-    width: 400,
-    height: 400,
-    fit: 'cover',
-    gravity: 'smart',
-    fpX: 0.5,
-    fpY: 0.5,
-    format: 'auto',
-    quality: 80,
-    dpr: 1.0,
-    blur: 0,
-    sharpen: 0,
-    gray: false,
-    rot: 0,
-    lqip: '',
-    wmEnabled: false,
-    wmImage: '',
-    wmGravity: 'southeast',
-    wmOpacity: 0.5,
-    wmScale: 20,
-    wmPad: 10,
-    debug: '',
-    secret: '',
+  const [params, setParams] = useState<TransformParams>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      width: parseInt(urlParams.get('w') || '400') || 400,
+      height: parseInt(urlParams.get('h') || '400') || 400,
+      fit: (urlParams.get('fit') as any) || 'cover',
+      gravity: (urlParams.get('gravity') as any) || 'smart',
+      fpX: parseFloat(urlParams.get('fp_x') || '0.5') || 0.5,
+      fpY: parseFloat(urlParams.get('fp_y') || '0.5') || 0.5,
+      format: (urlParams.get('format') as any) || 'auto',
+      quality: parseInt(urlParams.get('q') || '80') || 80,
+      dpr: parseFloat(urlParams.get('dpr') || '1.0') || 1.0,
+      blur: parseFloat(urlParams.get('blur') || '0') || 0,
+      sharpen: parseFloat(urlParams.get('sharpen') || '0') || 0,
+      gray: urlParams.get('gray') === 'true',
+      rot: parseInt(urlParams.get('rot') || '0') || 0,
+      lqip: (urlParams.get('lqip') as any) || '',
+      wmEnabled: urlParams.get('wm') === 'true',
+      wmImage: urlParams.get('wm_image') || '',
+      wmGravity: (urlParams.get('wm_gravity') as any) || 'southeast',
+      wmOpacity: parseFloat(urlParams.get('wm_opacity') || '0.5') || 0.5,
+      wmScale: parseInt(urlParams.get('wm_scale') || '20') || 20,
+      wmPad: parseInt(urlParams.get('wm_pad') || '10') || 10,
+      debug: (urlParams.get('debug') as any) || '',
+      secret: urlParams.get('secret') || '',
+    };
   });
 
   // Fetch presets on load
@@ -239,51 +245,51 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
       {/* Top Application Header */}
-      <header className="px-6 py-3.5 border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur sticky top-0 z-40 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold font-mono text-sm">
+      <header className="px-4 sm:px-6 py-3 sm:py-3.5 border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur sticky top-0 z-40 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold font-mono text-sm shrink-0">
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <h1 className="font-bold tracking-tight text-sm text-zinc-100">imgscale</h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-700/50 text-indigo-300">
+              <span className="text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-700/50 text-indigo-300">
                 v1.1.0
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 text-emerald-300">
+              <span className="text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 text-emerald-300">
                 &lt; 35MB RAM
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-zinc-400 hidden sm:block">
               Real-time SIMD Resizing, Sobel Saliency & Smart Focal Crop Studio
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="https://github.com/alexandrmotologa/imgscale"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
           >
             <GithubIcon />
-            <span>GitHub</span>
+            <span className="hidden sm:inline">GitHub</span>
           </a>
           <a
             href="https://github.com/alexandrmotologa/imgscale/tree/main/docs"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Docs</span>
+            <span className="hidden sm:inline">Docs</span>
           </a>
         </div>
       </header>
 
       {/* Main Workspace Layout */}
-      <main className="flex-1 p-4 max-w-[1728px] mx-auto w-full flex flex-col gap-4">
+      <main className="flex-1 p-3 sm:p-4 max-w-[1728px] mx-auto w-full flex flex-col gap-3 sm:gap-4">
         {/* Source Image Selector & Uploader */}
         <SourceExplorer
           selectedPath={selectedPath}
