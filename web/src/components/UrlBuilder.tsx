@@ -11,6 +11,9 @@ import {
   Unlock,
   Flame,
   Layers,
+  Target,
+  Image as ImageIcon,
+  Zap,
 } from 'lucide-react';
 import { TransformParams } from '../types';
 
@@ -32,7 +35,7 @@ export const UrlBuilder: React.FC<Props> = ({
   const [aspectLocked, setAspectLocked] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(params.width > 0 && params.height > 0 ? params.width / params.height : 1);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [activeSnippetTab, setActiveSnippetTab] = useState<'url' | 'html' | 'curl' | 'nextjs'>('url');
+  const [activeSnippetTab, setActiveSnippetTab] = useState<'url' | 'html' | 'picture' | 'curl' | 'nextjs'>('url');
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -72,6 +75,15 @@ export const UrlBuilder: React.FC<Props> = ({
   const getHtmlSnippet = () => `<img src="${generatedUrl}" alt="Optimized via imgscale" loading="lazy" />`;
   const getCurlSnippet = () => `curl -O "${generatedUrl}"`;
   const getNextJsSnippet = () => `<Image src="${generatedUrl}" alt="Media" width={${params.width || 800}} height={${params.height || 600}} />`;
+
+  const getPictureSnippet = () => {
+    const url1x = generatedUrl;
+    const url2x = generatedUrl.includes('?') ? `${generatedUrl}&dpr=2.0` : `${generatedUrl}?dpr=2.0`;
+    return `<picture>
+  <source type="image/webp" srcset="${url1x} 1x, ${url2x} 2x" />
+  <img src="${url1x}" alt="Media asset" width="${params.width || 800}" height="${params.height || 600}" loading="lazy" decoding="async" />
+</picture>`;
+  };
 
   return (
     <div className="flex flex-col gap-5 p-4 bg-zinc-900/60 rounded-xl border border-zinc-800/80 shadow-xl overflow-y-auto max-h-[calc(100vh-140px)]">
@@ -174,46 +186,69 @@ export const UrlBuilder: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Gravity Anchor / Smart Sobel Entropy Crop */}
+      {/* Gravity Anchor / Smart Sobel Entropy / Focal Point Crop */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
             <Crop className="w-3.5 h-3.5 text-indigo-400" />
-            Gravity / Focal Point
+            Gravity & Focal Cropping
           </label>
           {params.gravity === 'smart' && (
             <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> Sobel Active
             </span>
           )}
+          {params.gravity === 'fp' && (
+            <span className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
+              <Target className="w-3 h-3" /> FP ({Math.round(params.fpX * 100)}%, {Math.round(params.fpY * 100)}%)
+            </span>
+          )}
         </div>
 
-        {/* Smart Crop Highlight Button */}
-        <button
-          onClick={() => onChange({ gravity: 'smart' })}
-          className={`w-full py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-2 border transition-all ${
-            params.gravity === 'smart'
-              ? 'bg-gradient-to-r from-indigo-900/80 to-purple-900/80 border-indigo-500/80 text-indigo-200 shadow-md ring-1 ring-indigo-500/40'
-              : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Smart Crop (Sobel Visual Entropy)</span>
-        </button>
+        {/* Crop Strategy Buttons */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => onChange({ gravity: 'smart' })}
+            className={`py-1.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border transition-all ${
+              params.gravity === 'smart'
+                ? 'bg-indigo-900/80 border-indigo-500/80 text-indigo-200 shadow-md ring-1 ring-indigo-500/40'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Sobel Entropy</span>
+          </button>
+
+          <button
+            onClick={() => onChange({ gravity: 'fp' })}
+            className={`py-1.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 border transition-all ${
+              params.gravity === 'fp'
+                ? 'bg-amber-950/80 border-amber-500/80 text-amber-200 shadow-md ring-1 ring-amber-500/40'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Target className="w-3.5 h-3.5 text-amber-400" />
+            <span>Focal Point (Click)</span>
+          </button>
+        </div>
 
         {/* 2D Compass Grid for directional gravity */}
-        <div className="grid grid-cols-3 gap-1 pt-1">
+        <div className="grid grid-cols-5 gap-1 pt-1">
           {[
+            { label: 'NW', val: 'northwest' },
             { label: 'North', val: 'north' },
-            { label: 'Center', val: 'center' },
-            { label: 'South', val: 'south' },
+            { label: 'NE', val: 'northeast' },
             { label: 'West', val: 'west' },
+            { label: 'Center', val: 'center' },
             { label: 'East', val: 'east' },
+            { label: 'SW', val: 'southwest' },
+            { label: 'South', val: 'south' },
+            { label: 'SE', val: 'southeast' },
           ].map((item) => (
             <button
               key={item.val}
               onClick={() => onChange({ gravity: item.val as any })}
-              className={`text-xs py-1 px-2 rounded border font-mono transition-colors ${
+              className={`text-[11px] py-1 px-1 rounded border font-mono transition-colors text-center ${
                 params.gravity === item.val
                   ? 'bg-zinc-800 border-zinc-600 text-zinc-100 font-medium'
                   : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'
@@ -283,6 +318,101 @@ export const UrlBuilder: React.FC<Props> = ({
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Dynamic Watermark / Badge Overlay */}
+      <div className="space-y-3 pt-2 border-t border-zinc-800/80">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+            <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+            Watermarking / Overlay
+          </label>
+          <button
+            onClick={() => onChange({ wmEnabled: !params.wmEnabled })}
+            className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+              params.wmEnabled
+                ? 'bg-indigo-950 border-indigo-700/60 text-indigo-300'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-500'
+            }`}
+          >
+            {params.wmEnabled ? 'ENABLED' : 'OFF'}
+          </button>
+        </div>
+
+        {params.wmEnabled && (
+          <div className="space-y-2 p-2.5 rounded-lg bg-zinc-950 border border-zinc-800">
+            <div>
+              <span className="text-[11px] text-zinc-400 mb-1 block">Overlay Asset Path</span>
+              <input
+                type="text"
+                value={params.wmImage}
+                placeholder="e.g. pattern.webp or diagram.png"
+                onChange={(e) => onChange({ wmImage: e.target.value })}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2.5 py-1 text-xs font-mono text-zinc-200"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="flex justify-between text-[11px] text-zinc-400 mb-1">
+                  <span>Scale</span>
+                  <span className="font-mono text-zinc-200">{params.wmScale}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  value={params.wmScale}
+                  onChange={(e) => onChange({ wmScale: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500 bg-zinc-900 cursor-pointer h-1 rounded"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-[11px] text-zinc-400 mb-1">
+                  <span>Opacity</span>
+                  <span className="font-mono text-zinc-200">{Math.round(params.wmOpacity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={Math.round(params.wmOpacity * 100)}
+                  onChange={(e) => onChange({ wmOpacity: parseInt(e.target.value) / 100.0 })}
+                  className="w-full accent-indigo-500 bg-zinc-900 cursor-pointer h-1 rounded"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* LQIP Placeholder Mode */}
+      <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+        <label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+          <Zap className="w-3.5 h-3.5 text-amber-400" />
+          Low-Quality Placeholder (LQIP)
+        </label>
+        <div className="grid grid-cols-4 gap-1">
+          {[
+            { label: 'Off', val: '' },
+            { label: 'Data-URI', val: 'datauri' },
+            { label: 'JSON Meta', val: 'json' },
+            { label: 'Micro Blur', val: 'blur' },
+          ].map((item) => (
+            <button
+              key={item.val}
+              onClick={() => onChange({ lqip: item.val as any })}
+              className={`text-xs py-1 rounded border font-mono transition-colors text-center ${
+                params.lqip === item.val
+                  ? 'bg-amber-950 border-amber-600/80 text-amber-200 font-medium'
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -409,7 +539,7 @@ export const UrlBuilder: React.FC<Props> = ({
             Integration Snippets
           </span>
           <div className="flex gap-1 bg-zinc-950 p-0.5 rounded border border-zinc-800 text-[10px]">
-            {(['url', 'html', 'curl', 'nextjs'] as const).map((tab) => (
+            {(['url', 'html', 'picture', 'curl', 'nextjs'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveSnippetTab(tab)}
@@ -429,6 +559,7 @@ export const UrlBuilder: React.FC<Props> = ({
           <pre className="bg-zinc-950 border border-zinc-800/90 rounded-lg p-2.5 text-[11px] font-mono text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all max-h-24">
             {activeSnippetTab === 'url' && generatedUrl}
             {activeSnippetTab === 'html' && getHtmlSnippet()}
+            {activeSnippetTab === 'picture' && getPictureSnippet()}
             {activeSnippetTab === 'curl' && getCurlSnippet()}
             {activeSnippetTab === 'nextjs' && getNextJsSnippet()}
           </pre>
@@ -440,6 +571,8 @@ export const UrlBuilder: React.FC<Props> = ({
                   ? generatedUrl
                   : activeSnippetTab === 'html'
                   ? getHtmlSnippet()
+                  : activeSnippetTab === 'picture'
+                  ? getPictureSnippet()
                   : activeSnippetTab === 'curl'
                   ? getCurlSnippet()
                   : getNextJsSnippet();

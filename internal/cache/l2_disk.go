@@ -157,6 +157,33 @@ func (c *L2DiskCache) Set(key string, data []byte, contentType string) error {
 	return nil
 }
 
+// PurgePrefix removes cached blocks whose keys match prefix (or all if prefix is empty).
+func (c *L2DiskCache) PurgePrefix(prefix string) (int, error) {
+	removed := 0
+	err := filepath.Walk(c.dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".meta" {
+			metaBytes, err := os.ReadFile(path)
+			if err == nil {
+				var meta DiskMeta
+				if json.Unmarshal(metaBytes, &meta) == nil {
+					if prefix == "" || len(meta.Key) >= len(prefix) && meta.Key[:len(prefix)] == prefix {
+						_ = os.Remove(path)
+						binFile := path[:len(path)-5] + ".bin"
+						_ = os.Remove(binFile)
+						removed++
+					}
+				}
+			}
+		}
+		return nil
+	})
+	c.calculateUsage()
+	return removed, err
+}
+
 // L2Stats holds telemetry for the disk cache.
 type L2Stats struct {
 	Hits       uint64  `json:"hits"`

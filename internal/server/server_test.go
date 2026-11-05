@@ -208,3 +208,48 @@ func TestHMACSignatureEnforcement(t *testing.T) {
 		t.Fatalf("Expected 403 Forbidden with tampered query, got %d", rr.Code)
 	}
 }
+
+func TestMetricsEndpoint(t *testing.T) {
+	router, _, cleanup := setupTestServer(t, "", false)
+	defer cleanup()
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /metrics, got %d", rr.Code)
+	}
+
+	body := rr.Body.String()
+	if !bytes.Contains([]byte(body), []byte("imgscale_uptime_seconds")) {
+		t.Errorf("Expected Prometheus metrics output, got: %s", body)
+	}
+}
+
+func TestPurgeEndpoint(t *testing.T) {
+	router, _, cleanup := setupTestServer(t, "", false)
+	defer cleanup()
+
+	// 1. Populate cache
+	req := httptest.NewRequest(http.MethodGet, "/v1/images/sample.png?w=100&h=100", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	// 2. Purge
+	reqPurge := httptest.NewRequest(http.MethodPost, "/api/cache/purge?path=sample.png", nil)
+	rrPurge := httptest.NewRecorder()
+	router.ServeHTTP(rrPurge, reqPurge)
+
+	if rrPurge.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for purge, got %d", rrPurge.Code)
+	}
+
+	var res map[string]interface{}
+	if err := json.NewDecoder(rrPurge.Body).Decode(&res); err != nil {
+		t.Fatal(err)
+	}
+	if res["status"] != "ok" {
+		t.Errorf("Expected status ok, got %v", res["status"])
+	}
+}

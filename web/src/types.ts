@@ -2,7 +2,9 @@ export interface TransformParams {
   width: number;
   height: number;
   fit: 'cover' | 'contain' | 'fill' | 'inside' | 'outside' | 'crop';
-  gravity: 'center' | 'north' | 'south' | 'east' | 'west' | 'smart';
+  gravity: 'center' | 'north' | 'south' | 'east' | 'west' | 'smart' | 'fp';
+  fpX: number; // 0.0 to 1.0
+  fpY: number; // 0.0 to 1.0
   format: 'auto' | 'webp' | 'jpeg' | 'png' | 'gif';
   quality: number;
   dpr: number;
@@ -10,6 +12,13 @@ export interface TransformParams {
   sharpen: number;
   gray: boolean;
   rot: number;
+  lqip: '' | 'datauri' | 'json' | 'blur';
+  wmEnabled: boolean;
+  wmImage: string;
+  wmGravity: 'southeast' | 'southwest' | 'center' | 'northeast' | 'northwest';
+  wmOpacity: number; // 0 to 1.0
+  wmScale: number; // 5 to 50%
+  wmPad: number;
   debug: '' | 'entropy';
   secret: string;
 }

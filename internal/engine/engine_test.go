@@ -203,3 +203,71 @@ func TestContentNegotiation(t *testing.T) {
 		t.Errorf("Expected explicit PNG, got %s", fmt3)
 	}
 }
+
+func TestFocalPointCrop(t *testing.T) {
+	rectTopLeft := CalculateFocalCrop(1000, 1000, 400, 400, 0.05, 0.05)
+	if rectTopLeft.Min.X != 0 || rectTopLeft.Min.Y != 0 {
+		t.Errorf("Expected focal crop at (0, 0), got (%d, %d)", rectTopLeft.Min.X, rectTopLeft.Min.Y)
+	}
+
+	rectBottomRight := CalculateFocalCrop(1000, 1000, 400, 400, 0.95, 0.95)
+	if rectBottomRight.Max.X != 1000 || rectBottomRight.Max.Y != 1000 {
+		t.Errorf("Expected focal crop at (600, 600) to (1000, 1000), got max (%d, %d)", rectBottomRight.Max.X, rectBottomRight.Max.Y)
+	}
+}
+
+func TestLQIP(t *testing.T) {
+	src := createSyntheticImage(400, 300)
+	raw := encodeTestPNG(src)
+
+	// 1. DataURI mode
+	resDataURI, err := Transform(bytes.NewReader(raw), TransformOptions{LQIP: "datauri"})
+	if err != nil {
+		t.Fatalf("LQIP datauri failed: %v", err)
+	}
+	if !bytes.HasPrefix(resDataURI.Data, []byte("data:image/webp;base64,")) {
+		t.Errorf("Expected data URI prefix, got %s", string(resDataURI.Data[:30]))
+	}
+
+	// 2. JSON mode
+	resJSON, err := Transform(bytes.NewReader(raw), TransformOptions{LQIP: "json"})
+	if err != nil {
+		t.Fatalf("LQIP json failed: %v", err)
+	}
+	if resJSON.ContentType != "application/json" {
+		t.Errorf("Expected application/json, got %s", resJSON.ContentType)
+	}
+
+	// 3. Dominant Color calculation
+	domColor := ComputeDominantColor(src)
+	if len(domColor) != 7 || domColor[0] != '#' {
+		t.Errorf("Invalid dominant color format: %s", domColor)
+	}
+}
+
+func TestWatermark(t *testing.T) {
+	base := createSyntheticImage(500, 500)
+	wm := createSyntheticImage(100, 100)
+
+	composite := ApplyWatermark(base, WatermarkOptions{
+		Watermark: wm,
+		Gravity:   GravitySouthEast,
+		Opacity:   0.6,
+		Scale:     20,
+		Padding:   10,
+	})
+
+	if composite.Bounds().Dx() != 500 || composite.Bounds().Dy() != 500 {
+		t.Errorf("Expected 500x500 composite bounds")
+	}
+}
+
+func TestExifFixOrientation(t *testing.T) {
+	src := createSyntheticImage(400, 200)
+
+	// Orientation 6 = rotate 90 deg clockwise (so width and height swap)
+	rotated := FixOrientation(src, 6)
+	if rotated.Bounds().Dx() != 200 || rotated.Bounds().Dy() != 400 {
+		t.Errorf("Expected 200x400 after 90 deg rotation, got %dx%d", rotated.Bounds().Dx(), rotated.Bounds().Dy())
+	}
+}

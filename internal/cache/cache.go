@@ -112,6 +112,13 @@ func (c *TwoTierCache) GetOrCompute(ctx context.Context, key string, computeFn f
 	return cr.data, cr.contentType, cr.source, nil
 }
 
+// Purge invalidates cached items across L1 and L2 matching keyPrefix (or all if empty).
+func (c *TwoTierCache) Purge(keyPrefix string) (int, error) {
+	l1Count := c.l1.PurgePrefix(keyPrefix)
+	l2Count, err := c.l2.PurgePrefix(keyPrefix)
+	return l1Count + l2Count, err
+}
+
 // CacheTelemetry holds aggregated statistics across both cache tiers.
 type CacheTelemetry struct {
 	L1 L1Stats `json:"l1"`

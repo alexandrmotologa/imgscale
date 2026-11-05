@@ -1,8 +1,11 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -66,6 +69,9 @@ func (h *GatewayHandler) HandleImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gravity := engine.ParseGravity(q.Get("gravity"))
+	fpX := parseQueryFloat(q, "fp_x", 0.5)
+	fpY := parseQueryFloat(q, "fp_y", 0.5)
+
 	reqFormat := engine.ParseFormat(q.Get("format"))
 	acceptHeader := r.Header.Get("Accept")
 	resolvedFormat := engine.NegotiateFormat(reqFormat, acceptHeader)
@@ -77,28 +83,41 @@ func (h *GatewayHandler) HandleImage(w http.ResponseWriter, r *http.Request) {
 	gray := parseQueryBool(q, "gray", false)
 	rot := parseQueryInt(q, "rot", 0)
 	debug := q.Get("debug")
+	lqip := q.Get("lqip")
+	autoOrient := parseQueryBool(q, "auto_orient", true)
+
+	// Watermarking parameters
+	wmImage := q.Get("wm_image")
+	wmGravity := engine.ParseGravity(q.Get("wm_gravity"))
+	wmOpacity := parseQueryFloat(q, "wm_opacity", 0.85)
+	wmScale := parseQueryFloat(q, "wm_scale", 20.0)
+	wmPad := parseQueryInt(q, "wm_pad", 16)
 
 	opts := engine.TransformOptions{
-		Width:   reqW,
-		Height:  reqH,
-		Fit:     fit,
-		Gravity: gravity,
-		Format:  resolvedFormat,
-		Quality: quality,
-		DPR:     dpr,
+		Width:       reqW,
+		Height:      reqH,
+		Fit:         fit,
+		Gravity:     gravity,
+		FocalPointX: fpX,
+		FocalPointY: fpY,
+		Format:      resolvedFormat,
+		Quality:     quality,
+		DPR:         dpr,
 		Filters: engine.FilterOptions{
 			Blur:      blur,
 			Sharpen:   sharpen,
 			Grayscale: gray,
 			Rotate:    rot,
 		},
-		Debug:  debug,
-		Accept: acceptHeader,
+		LQIP:       lqip,
+		AutoOrient: autoOrient,
+		Debug:      debug,
+		Accept:     acceptHeader,
 	}
 
 	// Canonical cache key
-	cacheKey := fmt.Sprintf("%s|w=%d&h=%d&fit=%s&g=%s&fmt=%s&q=%d&dpr=%.2f&b=%.1f&sh=%.1f&gray=%t&rot=%d&dbg=%s",
-		path, reqW, reqH, fit, gravity, resolvedFormat, quality, dpr, blur, sharpen, gray, rot, debug)
+	cacheKey := fmt.Sprintf("%s|w=%d&h=%d&fit=%s&g=%s&fpx=%.2f&fpy=%.2f&fmt=%s&q=%d&dpr=%.2f&b=%.1f&sh=%.1f&gray=%t&rot=%d&dbg=%s&lqip=%s&ao=%t&wm=%s&wmg=%s&wmo=%.2f&wms=%.1f&wmp=%d",
+		path, reqW, reqH, fit, gravity, fpX, fpY, resolvedFormat, quality, dpr, blur, sharpen, gray, rot, debug, lqip, autoOrient, wmImage, wmGravity, wmOpacity, wmScale, wmPad)
 
 	etag := cache.GenerateETag(path, cacheKey, 0)
 
@@ -122,6 +141,23 @@ func (h *GatewayHandler) HandleImage(w http.ResponseWriter, r *http.Request) {
 
 		if size > h.cfg.Limits.MaxPayloadBytes {
 			return nil, "", storage.ErrPayloadTooLarge
+		}
+
+		// If watermark is requested, fetch and decode watermark overlay image
+		if wmImage != "" {
+			wmRc, _, wmErr := h.storage.Get(r.Context(), wmImage)
+			if wmErr == nil {
+				defer wmRc.Close()
+				if wmImg, _, decErr := engine.DecodeImage(wmRc); decErr == nil {
+					opts.Watermark = engine.WatermarkOptions{
+						Watermark: wmImg,
+						Gravity:   wmGravity,
+						Opacity:   wmOpacity,
+						Scale:     wmScale,
+						Padding:   wmPad,
+					}
+				}
+			}
 		}
 
 		res, err := engine.Transform(rc, opts)
@@ -199,6 +235,155 @@ func (h *GatewayHandler) HandleStats(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
+// HandleMetrics outputs standard Prometheus / OpenMetrics scraping format.
+func (h *GatewayHandler) HandleMetrics(w http.ResponseWriter, r *http.Request) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	telemetry := h.cache.Telemetry()
+	uptime := int(time.Since(h.startTime).Seconds())
+
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	out := fmt.Sprintf(`# HELP imgscale_uptime_seconds Total daemon uptime in seconds
+# TYPE imgscale_uptime_seconds gauge
+imgscale_uptime_seconds %d
+
+# HELP imgscale_cache_hits_total Cache hit count by tier
+# TYPE imgscale_cache_hits_total counter
+imgscale_cache_hits_total{tier="l1"} %d
+imgscale_cache_hits_total{tier="l2"} %d
+
+# HELP imgscale_cache_misses_total Cache miss count by tier
+# TYPE imgscale_cache_misses_total counter
+imgscale_cache_misses_total{tier="l1"} %d
+imgscale_cache_misses_total{tier="l2"} %d
+
+# HELP imgscale_cache_bytes Memory or disk footprint in bytes
+# TYPE imgscale_cache_bytes gauge
+imgscale_cache_bytes{tier="l1"} %d
+imgscale_cache_bytes{tier="l2"} %d
+
+# HELP imgscale_cache_items Stored items count
+# TYPE imgscale_cache_items gauge
+imgscale_cache_items{tier="l1"} %d
+imgscale_cache_items{tier="l2"} %d
+
+# HELP imgscale_memory_alloc_bytes Process memory allocation in bytes
+# TYPE imgscale_memory_alloc_bytes gauge
+imgscale_memory_alloc_bytes %d
+
+# HELP imgscale_goroutines Current active goroutines
+# TYPE imgscale_goroutines gauge
+imgscale_goroutines %d
+`,
+		uptime,
+		telemetry.L1.Hits,
+		telemetry.L2.Hits,
+		telemetry.L1.Misses,
+		telemetry.L2.Misses,
+		telemetry.L1.TotalBytes,
+		telemetry.L2.TotalBytes,
+		telemetry.L1.ItemCount,
+		telemetry.L2.FileCount,
+		m.Alloc,
+		runtime.NumGoroutine(),
+	)
+
+	_, _ = w.Write([]byte(out))
+}
+
+// HandlePurge invalidates cached images across L1 and L2 by path prefix.
+func (h *GatewayHandler) HandlePurge(w http.ResponseWriter, r *http.Request) {
+	targetPath := r.URL.Query().Get("path")
+
+	if r.Method == http.MethodPost && targetPath == "" {
+		var req struct {
+			Path string `json:"path"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		targetPath = req.Path
+	}
+
+	purgedCount, err := h.cache.Purge(targetPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("purge failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":       "ok",
+		"target_path":  targetPath,
+		"purged_count": purgedCount,
+	})
+}
+
+// HandleUpload allows web studio users to upload custom images into storage.
+func (h *GatewayHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 32MB max upload memory
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, "failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		file, header, err = r.FormFile("file")
+		if err != nil {
+			http.Error(w, "missing 'image' or 'file' form field", http.StatusBadRequest)
+			return
+		}
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read uploaded file", http.StatusInternalServerError)
+		return
+	}
+
+	// Validate that file is a valid image
+	img, detectedFmt, err := engine.DecodeImage(strings.NewReader(string(data)))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invalid or unsupported image format: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Save into local storage root uploads/
+	uploadDir := filepath.Join(h.cfg.Storage.Local.RootDir, "uploads")
+	_ = os.MkdirAll(uploadDir, 0755)
+
+	hash := sha256.Sum256(data)
+	hashName := hex.EncodeToString(hash[:8])
+	cleanExt := detectedFmt.Extension()
+	fileName := fmt.Sprintf("%s_%s.%s", time.Now().Format("20060102150405"), hashName, cleanExt)
+	destPath := filepath.Join(uploadDir, fileName)
+
+	if err := os.WriteFile(destPath, data, 0644); err != nil {
+		http.Error(w, fmt.Sprintf("failed to save uploaded file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	relPath := "uploads/" + fileName
+	bounds := img.Bounds()
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "ok",
+		"path":     relPath,
+		"name":     header.Filename,
+		"format":   string(detectedFmt),
+		"width":    bounds.Dx(),
+		"height":   bounds.Dy(),
+		"size":     len(data),
+	})
+}
+
 // HandleSign generates a signed URL given path and parameters.
 func (h *GatewayHandler) HandleSign(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -263,10 +448,14 @@ func (h *GatewayHandler) HandlePresets(w http.ResponseWriter, r *http.Request) {
 				if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" {
 					rel, _ := filepath.Rel(root, p)
 					rel = filepath.ToSlash(rel)
+					category := "testdata"
+					if strings.HasPrefix(rel, "uploads/") {
+						category = "uploads"
+					}
 					presets = append(presets, PresetItem{
 						ID:       rel,
 						Name:     filepath.Base(p),
-						Category: "local",
+						Category: category,
 						Path:     rel,
 					})
 				}

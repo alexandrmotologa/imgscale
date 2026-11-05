@@ -9,12 +9,18 @@ Self-hosted dynamic image resizing, WebP/AVIF transcoding, and smart crop gatewa
 ## Key Features
 
 - **Real-Time SIMD Resizing**: Lanczos3, Catmull-Rom, Box, Linear, and Nearest-Neighbor resamplers.
-- **Smart Saliency Crop**: $3 \times 3$ Sobel convolution gradient filter calculates visual edge entropy to preserve focal subjects.
+- **Smart Saliency Crop**: 3x3 Sobel convolution gradient filter calculates visual edge entropy to preserve focal subjects.
+- **Interactive Focal Point Crop**: Point-and-click coordinate selection (`fp_x`, `fp_y`) to anchor crops on specific visual elements.
+- **Watermark and Overlay Engine**: Alpha-blended watermark placement with configurable opacity, scale, and gravity anchors.
+- **Low-Quality Placeholders (LQIP)**: Instant Base64 Data-URI, micro-blur, and JSON metadata with `#RRGGBB` dominant color extraction for blur-up image loaders.
+- **EXIF Auto-Orientation**: Automatically corrects image orientation from camera metadata tags 1 through 8.
 - **Next-Gen Formats**: WebP, JPEG, PNG, and GIF encoding with dynamic `Accept` header format negotiation.
 - **Two-Tier Cache**: Concurrently sharded in-memory LRU (L1) coupled with directory-partitioned disk cache (L2) and automated quota sweeper.
+- **Cache Invalidation API**: Purge individual assets or flush the entire cache via HTTP DELETE or CLI.
 - **Thundering Herd Guard**: Singleflight deduplication coalesces concurrent identical transformation requests into a single pass.
 - **Hardened Security**: HMAC-SHA256 signature verification blocks unauthorized URL tampering. Custom network dialer blocks SSRF to private IP ranges and cloud metadata endpoints.
-- **Embedded Developer Studio**: React 19 visual cockpit for split-screen before/after comparisons, parameter tuning, live cache metrics, and saliency heatmap inspection.
+- **Embedded Developer Studio**: React 19 visual cockpit for split-screen before/after comparisons, parameter tuning, live cache metrics, ROI cost calculator, and drag-and-drop test uploads.
+- **Prometheus Observability**: Native `/metrics` endpoint for request counts, cache hit ratios, latency histograms, and memory metrics.
 - **RFC 9111 HTTP Caching**: Deterministic ETag calculation and 304 Not Modified responses.
 
 ---
@@ -40,7 +46,7 @@ Self-hosted dynamic image resizing, WebP/AVIF transcoding, and smart crop gatewa
 [ Storage Fetcher (Local / S3 / HTTP with SSRF Guard) ]
        │
        ▼
-[ Transformation Engine (Lanczos3 + Sobel Entropy + Encoders) ]
+[ Transformation Engine (Lanczos3 + Sobel Entropy + Watermark + Encoders) ]
        │
        ▼
 [ Write L2 Disk & L1 RAM ] ────────► [ HTTP Response ]
@@ -78,8 +84,20 @@ curl -o output.webp "http://localhost:8080/v1/images/sample.jpg?w=600&h=400&fit=
 # Smart crop focused on visual entropy centroid
 curl -o portrait.webp "http://localhost:8080/v1/images/sample.jpg?w=400&h=400&fit=cover&gravity=smart"
 
+# Focal point crop centered at custom coordinates (65% width, 35% height)
+curl -o focal.webp "http://localhost:8080/v1/images/sample.jpg?w=400&h=400&gravity=fp&fp_x=0.65&fp_y=0.35"
+
+# Generate low-quality placeholder Data-URI
+curl "http://localhost:8080/v1/images/sample.jpg?lqip=datauri"
+
+# Apply watermark overlay
+curl -o marked.jpg "http://localhost:8080/v1/images/sample.jpg?w=800&h=600&wm_image=logo.png&wm_opacity=0.6&wm_scale=20"
+
 # Inspect visual entropy heatmap
 curl -o heatmap.jpg "http://localhost:8080/v1/images/sample.jpg?debug=entropy"
+
+# Purge cached variants
+curl -X DELETE "http://localhost:8080/api/cache/purge?path=sample.jpg"
 ```
 
 ---
@@ -91,7 +109,9 @@ curl -o heatmap.jpg "http://localhost:8080/v1/images/sample.jpg?debug=entropy"
 | `w` | integer | `0` (auto) | `1` to `8192` | Target width in pixels |
 | `h` | integer | `0` (auto) | `1` to `8192` | Target height in pixels |
 | `fit` | string | `cover` | `cover`, `contain`, `fill`, `inside`, `outside`, `crop` | Scaling and aspect ratio strategy |
-| `gravity` | string | `center` | `center`, `north`, `south`, `east`, `west`, `smart` | Crop anchor position (`smart` uses Sobel entropy) |
+| `gravity` | string | `center` | `center`, `north`, `south`, `east`, `west`, `smart`, `fp` | Crop anchor position (`smart` uses Sobel entropy, `fp` uses coordinates) |
+| `fp_x` | float | `0.5` | `0.0` to `1.0` | Focal point horizontal position |
+| `fp_y` | float | `0.5` | `0.0` to `1.0` | Focal point vertical position |
 | `format` | string | `auto` | `auto`, `webp`, `jpeg`, `png`, `gif` | Output image format (`auto` checks `Accept` header) |
 | `q` | integer | `80` | `1` to `100` | Compression quality factor |
 | `dpr` | float | `1.0` | `1.0` to `3.0` | Device pixel ratio scaling multiplier |
@@ -99,6 +119,10 @@ curl -o heatmap.jpg "http://localhost:8080/v1/images/sample.jpg?debug=entropy"
 | `sharpen` | float | `0` | `0` to `100` | Unsharp mask sharpening intensity |
 | `gray` | boolean | `false` | `true`, `false`, `1`, `0` | Convert image to grayscale |
 | `rot` | integer | `0` | `0`, `90`, `180`, `270` | Clockwise rotation angle |
+| `lqip` | string | none | `datauri`, `json`, `blur` | Low-quality image placeholder generator |
+| `wm_image` | string | none | string | Watermark image filename or path |
+| `wm_opacity` | float | `0.5` | `0.0` to `1.0` | Watermark overlay opacity |
+| `wm_scale` | integer | `20` | `5` to `50` | Watermark width percentage |
 | `debug` | string | none | `entropy`, `meta` | Returns saliency map image or JSON metadata |
 | `s` | string | optional | HMAC hex string | Required when signature validation is active |
 

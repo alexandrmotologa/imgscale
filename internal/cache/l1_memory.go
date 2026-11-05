@@ -129,6 +129,26 @@ func (c *L1MemoryCache) Set(key string, data []byte, contentType string) {
 	shard.curBytes += entrySize
 }
 
+// PurgePrefix removes all items whose keys start with prefix (or all if prefix is empty).
+func (c *L1MemoryCache) PurgePrefix(prefix string) int {
+	removedCount := 0
+	for i := 0; i < numShards; i++ {
+		shard := c.shards[i]
+		shard.mu.Lock()
+		for k, elem := range shard.items {
+			if prefix == "" || len(k) >= len(prefix) && k[:len(prefix)] == prefix {
+				entry := elem.Value.(*MemoryEntry)
+				shard.curBytes -= entry.size
+				shard.lru.Remove(elem)
+				delete(shard.items, k)
+				removedCount++
+			}
+		}
+		shard.mu.Unlock()
+	}
+	return removedCount
+}
+
 // L1Stats holds telemetry for the memory cache.
 type L1Stats struct {
 	Hits       uint64 `json:"hits"`

@@ -1,19 +1,24 @@
-import React, { useState } from 'react';
-import { Image as ImageIcon, Link2, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Image as ImageIcon, Link2, CheckCircle2, Upload, Loader2 } from 'lucide-react';
 import { PresetItem } from '../types';
 
 interface Props {
   selectedPath: string;
   onSelect: (path: string) => void;
   presets: PresetItem[];
+  onUploadSuccess?: (item: PresetItem) => void;
 }
 
 export const SourceExplorer: React.FC<Props> = ({
   selectedPath,
   onSelect,
   presets,
+  onUploadSuccess,
 }) => {
   const [customPath, setCustomPath] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultPresets: PresetItem[] = [
     { id: 'portrait', name: 'Portrait (Off-Center Subject)', category: 'Face & Crop', path: 'portrait.png' },
@@ -31,18 +36,113 @@ export const SourceExplorer: React.FC<Props> = ({
     }
   };
 
+  const uploadFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPEG, PNG, WebP, GIF)');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const newItem: PresetItem = {
+          id: data.path,
+          name: data.name || file.name,
+          category: 'Upload',
+          path: data.path,
+          width: data.width,
+          height: data.height,
+        };
+        if (onUploadSuccess) {
+          onUploadSuccess(newItem);
+        }
+        onSelect(newItem.path);
+      } else {
+        const errText = await res.text();
+        alert('Upload failed: ' + errText);
+      }
+    } catch (err: any) {
+      alert('Network error uploading image: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      uploadFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
   return (
-    <div className="flex flex-col gap-3 p-4 bg-zinc-900/60 rounded-xl border border-zinc-800/80 shadow-xl">
+    <div
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      className={`flex flex-col gap-3 p-4 rounded-xl border transition-all shadow-xl ${
+        isDragging
+          ? 'bg-indigo-950/80 border-indigo-500 ring-2 ring-indigo-500/50'
+          : 'bg-zinc-900/60 border-zinc-800/80'
+      }`}
+    >
       <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
         <div className="flex items-center gap-2">
           <ImageIcon className="w-4 h-4 text-indigo-400" />
           <h3 className="text-xs font-semibold tracking-wide uppercase text-zinc-200">
-            Source Image Gallery
+            Source Image Gallery & Upload
           </h3>
         </div>
-        <span className="text-[11px] font-mono text-zinc-400">
-          Active: <span className="text-indigo-300 font-semibold">{selectedPath}</span>
-        </span>
+
+        <div className="flex items-center gap-3">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                uploadFile(e.target.files[0]);
+              }
+            }}
+            accept="image/*"
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-medium text-zinc-200 transition-colors shadow-sm"
+          >
+            {uploading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            ) : (
+              <Upload className="w-3.5 h-3.5" />
+            )}
+            <span>{uploading ? 'Uploading...' : 'Drop or Upload File'}</span>
+          </button>
+
+          <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">
+            Active: <span className="text-indigo-300 font-semibold">{selectedPath}</span>
+          </span>
+        </div>
       </div>
 
       {/* Preset Cards */}

@@ -29,8 +29,12 @@ func SetupRouter(h *GatewayHandler, uiFS fs.FS) http.Handler {
 	// System & Telemetry Endpoints
 	r.Get("/healthz", h.HandleHealth)
 	r.Get("/api/stats", h.HandleStats)
+	r.Get("/metrics", h.HandleMetrics)
 	r.Post("/api/sign", h.HandleSign)
 	r.Get("/api/presets", h.HandlePresets)
+	r.Post("/api/upload", h.HandleUpload)
+	r.Post("/api/cache/purge", h.HandlePurge)
+	r.Delete("/api/cache/purge", h.HandlePurge)
 
 	// Image Transformation Routes (with optional HMAC signature guard)
 	r.Group(func(ig chi.Router) {

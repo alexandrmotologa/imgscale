@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/alexandrmotologa/imgscale/internal/cache"
@@ -262,23 +261,26 @@ func cmdBench(args []string) {
 func cmdPurge(args []string) {
 	fsFlags := flag.NewFlagSet("purge", flag.ExitOnError)
 	cacheDir := fsFlags.String("cache-dir", "./data/cache", "Cache directory to purge")
+	key := fsFlags.String("key", "", "Specific image path or prefix to purge (e.g. avatar.jpg)")
 	_ = fsFlags.Parse(args)
 
-	entries, err := os.ReadDir(*cacheDir)
+	l2, err := cache.NewL2DiskCache(*cacheDir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("Cache directory does not exist, nothing to purge.")
-			return
-		}
-		fmt.Fprintf(os.Stderr, "Error reading cache directory: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error accessing cache directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	for _, e := range entries {
-		p := filepath.Join(*cacheDir, e.Name())
-		_ = os.RemoveAll(p)
+	count, err := l2.PurgePrefix(*key)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error purging cache: %v\n", err)
+		os.Exit(1)
 	}
-	fmt.Printf("Successfully purged disk cache at %s\n", *cacheDir)
+
+	if *key != "" {
+		fmt.Printf("Successfully purged %d cached items matching key %q from %s\n", count, *key, *cacheDir)
+	} else {
+		fmt.Printf("Successfully purged all %d cached items from %s\n", count, *cacheDir)
+	}
 }
 
 type byteReader struct {

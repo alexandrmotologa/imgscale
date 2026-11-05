@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Zap, HardDrive, Cpu, Activity, RefreshCw } from 'lucide-react';
+import { Zap, HardDrive, Cpu, Activity, RefreshCw, Trash2, Check, ExternalLink } from 'lucide-react';
 
 interface StatsResponse {
   uptime_sec: number;
@@ -34,6 +34,8 @@ export const CacheMetrics: React.FC = () => {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [purging, setPurging] = useState(false);
+  const [purgedMessage, setPurgedMessage] = useState<string | null>(null);
 
   const fetchStats = async () => {
     try {
@@ -47,6 +49,25 @@ export const CacheMetrics: React.FC = () => {
       // Endpoint may be offline in dev
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePurge = async () => {
+    if (!confirm('Are you sure you want to flush all L1 RAM and L2 disk caches?')) return;
+    try {
+      setPurging(true);
+      const res = await fetch('/api/cache/purge', { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        setPurgedMessage(data.message || 'Cache flushed');
+        setTimeout(() => setPurgedMessage(null), 3000);
+        fetchStats();
+      }
+    } catch {
+      setPurgedMessage('Purge failed');
+      setTimeout(() => setPurgedMessage(null), 3000);
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -67,15 +88,40 @@ export const CacheMetrics: React.FC = () => {
 
   return (
     <div className="bg-zinc-900/60 rounded-xl border border-zinc-800/80 p-4 shadow-xl">
-      <div className="flex items-center justify-between mb-4 border-b border-zinc-800 pb-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-zinc-800 pb-2.5">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-emerald-400" />
           <h3 className="text-xs font-semibold tracking-wide uppercase text-zinc-200">
             Live Gateway Telemetry
           </h3>
+          <a
+            href="/metrics"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[10px] font-mono text-zinc-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800"
+            title="Open Prometheus raw metrics"
+          >
+            Prometheus <ExternalLink className="w-2.5 h-2.5" />
+          </a>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {purgedMessage && (
+            <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+              <Check className="w-3 h-3" /> {purgedMessage}
+            </span>
+          )}
+
+          <button
+            onClick={handlePurge}
+            disabled={purging}
+            className="text-[11px] font-mono px-2 py-0.5 rounded border border-rose-900/60 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 transition-colors flex items-center gap-1"
+            title="Flush entire L1 RAM and L2 disk cache"
+          >
+            <Trash2 className="w-3 h-3" />
+            {purging ? 'Purging...' : 'Purge Cache'}
+          </button>
+
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`text-[11px] font-mono px-2 py-0.5 rounded border transition-colors ${

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Columns, SplitSquareVertical, ZoomIn, ZoomOut, Maximize2, Zap, Database, HardDrive, RefreshCw } from 'lucide-react';
+import { Columns, SplitSquareVertical, ZoomIn, ZoomOut, Maximize2, Zap, Database, HardDrive, RefreshCw, Target } from 'lucide-react';
 import { ImageTelemetry } from '../types';
 
 interface Props {
@@ -8,6 +8,9 @@ interface Props {
   telemetry: ImageTelemetry | null;
   loading: boolean;
   onRefresh: () => void;
+  focalPoint?: { x: number; y: number } | null;
+  onFocalPointSelect?: (x: number, y: number) => void;
+  focalPointActive?: boolean;
 }
 
 export const BeforeAfterDiff: React.FC<Props> = ({
@@ -16,6 +19,9 @@ export const BeforeAfterDiff: React.FC<Props> = ({
   telemetry,
   loading,
   onRefresh,
+  focalPoint,
+  onFocalPointSelect,
+  focalPointActive,
 }) => {
   const [sliderPos, setSliderPos] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -61,6 +67,14 @@ export const BeforeAfterDiff: React.FC<Props> = ({
       window.removeEventListener('touchend', handleMouseUp);
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove]);
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onFocalPointSelect) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    onFocalPointSelect(parseFloat(x.toFixed(2)), parseFloat(y.toFixed(2)));
+  };
 
   // Compute savings
   const origBytes = telemetry?.originalBytes || 0;
@@ -219,15 +233,36 @@ export const BeforeAfterDiff: React.FC<Props> = ({
             }}
           >
             {/* Original Image (Left / Base Layer) */}
-            <div className="relative">
+            <div
+              className={`relative ${focalPointActive ? 'cursor-crosshair' : ''}`}
+              onClick={handleImageClick}
+              title={focalPointActive ? 'Click anywhere to set Focal Point center' : ''}
+            >
               <img
                 src={originalUrl}
                 alt="Original"
                 className="max-h-[68vh] object-contain pointer-events-none block"
               />
-              <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 backdrop-blur text-[11px] font-mono text-zinc-300 border border-white/10">
+
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/75 backdrop-blur text-[11px] font-mono text-zinc-300 border border-white/10 pointer-events-none">
                 Original {telemetry?.originalWidth ? `(${telemetry.originalWidth}×${telemetry.originalHeight})` : ''}
+                {focalPointActive && ' • Click to focus'}
               </div>
+
+              {/* Focal Point Reticle */}
+              {focalPoint && focalPointActive && (
+                <div
+                  className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 z-30 animate-pulse"
+                  style={{
+                    left: `${focalPoint.x * 100}%`,
+                    top: `${focalPoint.y * 100}%`,
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full border-2 border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/50 flex items-center justify-center">
+                    <Target className="w-4 h-4 text-emerald-300" />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Transformed Image (Right / Clipped Overlay) */}
@@ -265,19 +300,41 @@ export const BeforeAfterDiff: React.FC<Props> = ({
             className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full p-2 overflow-auto"
             style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
           >
-            <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-900/40 border border-zinc-800">
+            <div
+              className={`flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-900/40 border border-zinc-800 ${
+                focalPointActive ? 'cursor-crosshair' : ''
+              }`}
+              onClick={handleImageClick}
+            >
               <div className="mb-2 text-xs font-mono text-zinc-400 flex items-center gap-2">
                 <span className="font-semibold text-zinc-200">Origin Source</span>
                 {telemetry?.originalWidth && (
                   <span>{telemetry.originalWidth}×{telemetry.originalHeight} px</span>
                 )}
-                {origBytes > 0 && <span>({formatBytes(origBytes)})</span>}
+                {focalPointActive && (
+                  <span className="text-emerald-400 font-semibold">• Click to Set Focal Point</span>
+                )}
               </div>
-              <img
-                src={originalUrl}
-                alt="Original"
-                className="max-h-[60vh] object-contain rounded border border-zinc-800/80"
-              />
+              <div className="relative">
+                <img
+                  src={originalUrl}
+                  alt="Original"
+                  className="max-h-[60vh] object-contain rounded border border-zinc-800/80 pointer-events-none"
+                />
+                {focalPoint && focalPointActive && (
+                  <div
+                    className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 z-30 animate-pulse"
+                    style={{
+                      left: `${focalPoint.x * 100}%`,
+                      top: `${focalPoint.y * 100}%`,
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-full border-2 border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/50 flex items-center justify-center">
+                      <Target className="w-4 h-4 text-emerald-300" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-900/40 border border-zinc-800">

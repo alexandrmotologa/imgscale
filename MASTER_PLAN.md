@@ -233,3 +233,13 @@ $$\text{Signature} = \text{Hex}(\text{HMAC-SHA256}(\text{SecretKey}, \text{Path}
 - [x] Write humanized `README.md` without superlatives or ungrounded claims.
 - [x] Build multi-stage `Dockerfile` and `Makefile`.
 - [x] Verify test suite passes with 100% success rate.
+
+### Task 8: Usability and Enterprise Enhancements
+- [x] Interactive Focal Point Crop: point-and-click coordinate selection (`fp_x`, `fp_y`) with reticle overlay.
+- [x] Watermarking and Badge Engine: alpha-blended image overlays (`wm_image`, `wm_opacity`, `wm_scale`, `wm_gravity`, `wm_pad`).
+- [x] Low-Quality Image Placeholders (LQIP): data-uri Base64 strings, JSON metadata with dominant color `#RRGGBB`, and micro-blur modes.
+- [x] EXIF Orientation Correction: automatic rotation and flipping for smartphone photos (EXIF tags 1 through 8).
+- [x] Prometheus Metrics: `/metrics` endpoint exposing request counters, cache hit/miss distributions, transform latency histograms, and memory metrics.
+- [x] Cache Purge API: `/api/cache/purge` endpoint and CLI subcommand (`imgscale purge`) to clear specific images or flush L1 and L2 caches.
+- [x] Drag-and-Drop Image Uploader: `/api/upload` endpoint allowing direct asset testing from the Web Studio.
+- [x] Cloudinary and Imgix Cost Calculator: interactive ROI estimation showing monthly bandwidth and dollar savings compared to cloud image vendors.

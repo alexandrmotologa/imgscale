@@ -176,3 +176,50 @@ func TestDiskSweeperQuota(t *testing.T) {
 		t.Errorf("Expected sweeper to prune under 25KB, current bytes: %d", stats.TotalBytes)
 	}
 }
+
+func TestCachePurge(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "imgscale-purge-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tc, err := NewTwoTierCache(Config{
+		L1MaxBytes: 10 * 1024 * 1024,
+		L2Dir:      tempDir,
+		L2MaxBytes: 50 * 1024 * 1024,
+		L2MaxTTL:   24 * time.Hour,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	_, _, _, _ = tc.GetOrCompute(ctx, "photo1.jpg?w=100", func() ([]byte, string, error) {
+		return []byte("data1"), "image/jpeg", nil
+	})
+	_, _, _, _ = tc.GetOrCompute(ctx, "photo1.jpg?w=200", func() ([]byte, string, error) {
+		return []byte("data2"), "image/jpeg", nil
+	})
+	_, _, _, _ = tc.GetOrCompute(ctx, "other.png?w=300", func() ([]byte, string, error) {
+		return []byte("data3"), "image/png", nil
+	})
+
+	// Purge all variants of photo1.jpg
+	purged, err := tc.Purge("photo1.jpg")
+	if err != nil {
+		t.Fatalf("Purge failed: %v", err)
+	}
+	if purged < 2 {
+		t.Errorf("Expected at least 2 purged items, got %d", purged)
+	}
+
+	// Verify photo1 is gone from L1
+	if _, _, found := tc.l1.Get("photo1.jpg?w=100"); found {
+		t.Error("photo1.jpg?w=100 should be purged from L1")
+	}
+	// other.png should remain
+	if _, _, found := tc.l1.Get("other.png?w=300"); !found {
+		t.Error("other.png?w=300 should still exist in L1")
+	}
+}

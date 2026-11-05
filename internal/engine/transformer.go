@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"io"
@@ -9,17 +10,22 @@ import (
 
 // TransformOptions encapsulates all transformation requests.
 type TransformOptions struct {
-	Width    int
-	Height   int
-	Fit      FitMode
-	Gravity  GravityAnchor
-	Filter   ResampleFilter
-	Format   ImageFormat
-	Quality  int
-	DPR      float64
-	Filters  FilterOptions
-	Debug    string // "entropy", "meta"
-	Accept   string // HTTP Accept header for content negotiation
+	Width       int
+	Height      int
+	Fit         FitMode
+	Gravity     GravityAnchor
+	FocalPointX float64 // 0.0 to 1.0 (relative X anchor)
+	FocalPointY float64 // 0.0 to 1.0 (relative Y anchor)
+	Filter      ResampleFilter
+	Format      ImageFormat
+	Quality     int
+	DPR         float64
+	Filters     FilterOptions
+	LQIP        string // "datauri", "json", "blur"
+	Watermark   WatermarkOptions
+	AutoOrient  bool
+	Debug       string // "entropy", "meta"
+	Accept      string // HTTP Accept header for content negotiation
 }
 
 // TransformResult holds the output data and operational telemetry.
@@ -39,17 +45,46 @@ type TransformResult struct {
 func Transform(r io.Reader, opts TransformOptions) (*TransformResult, error) {
 	start := time.Now()
 
+	// Capture buffer for EXIF inspection if auto orientation requested
+	var rawBuf bytes.Buffer
+	tr := io.TeeReader(r, &rawBuf)
+
 	// 1. Decode source image
-	srcImg, origFormat, err := DecodeImage(r)
+	srcImg, origFormat, err := DecodeImage(tr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode source image: %w", err)
+	}
+
+	// Apply EXIF Auto-Orientation if requested or by default
+	if opts.AutoOrient {
+		orientation := ReadExifOrientation(bytes.NewReader(rawBuf.Bytes()))
+		srcImg = FixOrientation(srcImg, orientation)
 	}
 
 	srcBounds := srcImg.Bounds()
 	srcW := srcBounds.Dx()
 	srcH := srcBounds.Dy()
 
-	// 2. Handle debug=entropy visual saliency inspection
+	// 2. Handle Low-Quality Image Placeholder (LQIP) mode
+	if opts.LQIP != "" {
+		lqipData, contentType, err := GenerateLQIP(srcImg, opts.LQIP)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate LQIP: %w", err)
+		}
+		return &TransformResult{
+			Data:         lqipData,
+			Format:       FormatWebP,
+			ContentType:  contentType,
+			SrcWidth:     srcW,
+			SrcHeight:    srcH,
+			OutputWidth:  24,
+			OutputHeight: 24,
+			Duration:     time.Since(start),
+			ByteSize:     len(lqipData),
+		}, nil
+	}
+
+	// 3. Handle debug=entropy visual saliency inspection
 	if opts.Debug == "entropy" {
 		targetW := opts.Width
 		targetH := opts.Height
@@ -80,7 +115,7 @@ func Transform(r io.Reader, opts TransformOptions) (*TransformResult, error) {
 		}, nil
 	}
 
-	// 3. Negotiate target format
+	// 4. Negotiate target format
 	finalFormat := NegotiateFormat(opts.Format, opts.Accept)
 	if finalFormat == FormatAuto {
 		finalFormat = origFormat
@@ -89,7 +124,7 @@ func Transform(r io.Reader, opts TransformOptions) (*TransformResult, error) {
 		}
 	}
 
-	// 4. Calculate target dimensions accounting for DPR
+	// 5. Calculate target dimensions accounting for DPR
 	dpr := opts.DPR
 	if dpr <= 0 {
 		dpr = 1.0
@@ -97,7 +132,7 @@ func Transform(r io.Reader, opts TransformOptions) (*TransformResult, error) {
 	targetW := int(float64(opts.Width) * dpr)
 	targetH := int(float64(opts.Height) * dpr)
 
-	// 5. Apply resizing and cropping
+	// 6. Apply resizing and cropping
 	var transformed image.Image
 	if targetW > 0 || targetH > 0 {
 		filter := opts.Filter
@@ -113,15 +148,20 @@ func Transform(r io.Reader, opts TransformOptions) (*TransformResult, error) {
 			gravity = GravityCenter
 		}
 
-		transformed = ApplyCropAndResize(srcImg, targetW, targetH, fit, gravity, filter)
+		transformed = ApplyCropAndResize(srcImg, targetW, targetH, fit, gravity, opts.FocalPointX, opts.FocalPointY, filter)
 	} else {
 		transformed = srcImg
 	}
 
-	// 6. Apply post-processing filters (rotation, blur, sharpen, grayscale)
+	// 7. Apply post-processing filters (rotation, blur, sharpen, grayscale, brightness, contrast)
 	transformed = ApplyFilters(transformed, opts.Filters)
 
-	// 7. Encode output to target format
+	// 8. Apply watermark overlay if supplied
+	if opts.Watermark.Watermark != nil {
+		transformed = ApplyWatermark(transformed, opts.Watermark)
+	}
+
+	// 9. Encode output to target format
 	quality := opts.Quality
 	if quality <= 0 {
 		quality = 80

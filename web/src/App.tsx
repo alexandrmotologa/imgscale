@@ -3,12 +3,17 @@ import { UrlBuilder } from './components/UrlBuilder';
 import { BeforeAfterDiff } from './components/BeforeAfterDiff';
 import { SourceExplorer } from './components/SourceExplorer';
 import { CacheMetrics } from './components/CacheMetrics';
+import { CostCalculator } from './components/CostCalculator';
 import { TransformParams, ImageTelemetry, PresetItem } from './types';
 import { BookOpen, Layers } from 'lucide-react';
 
 const GithubIcon = () => (
   <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+    />
   </svg>
 );
 
@@ -25,6 +30,8 @@ export const App: React.FC = () => {
     height: 400,
     fit: 'cover',
     gravity: 'smart',
+    fpX: 0.5,
+    fpY: 0.5,
     format: 'auto',
     quality: 80,
     dpr: 1.0,
@@ -32,6 +39,13 @@ export const App: React.FC = () => {
     sharpen: 0,
     gray: false,
     rot: 0,
+    lqip: '',
+    wmEnabled: false,
+    wmImage: '',
+    wmGravity: 'southeast',
+    wmOpacity: 0.5,
+    wmScale: 20,
+    wmPad: 10,
     debug: '',
     secret: '',
   });
@@ -58,6 +72,13 @@ export const App: React.FC = () => {
     if (params.height > 0) q.set('h', params.height.toString());
     if (params.fit) q.set('fit', params.fit);
     if (params.gravity) q.set('gravity', params.gravity);
+
+    // Focal point coordinates
+    if (params.gravity === 'fp') {
+      q.set('fp_x', (params.fpX ?? 0.5).toFixed(2));
+      q.set('fp_y', (params.fpY ?? 0.5).toFixed(2));
+    }
+
     if (params.format && params.format !== 'auto') q.set('format', params.format);
     if (params.quality !== 80) q.set('q', params.quality.toString());
     if (params.dpr !== 1.0) q.set('dpr', params.dpr.toString());
@@ -65,6 +86,21 @@ export const App: React.FC = () => {
     if (params.sharpen > 0) q.set('sharpen', params.sharpen.toString());
     if (params.gray) q.set('gray', 'true');
     if (params.rot !== 0) q.set('rot', params.rot.toString());
+
+    // LQIP Placeholder
+    if (params.lqip) {
+      q.set('lqip', params.lqip);
+    }
+
+    // Watermark Overlay
+    if (params.wmEnabled && params.wmImage) {
+      q.set('wm_image', params.wmImage);
+      if (params.wmOpacity !== 0.5) q.set('wm_opacity', params.wmOpacity.toString());
+      if (params.wmScale !== 20) q.set('wm_scale', params.wmScale.toString());
+      if (params.wmGravity && params.wmGravity !== 'southeast') q.set('wm_gravity', params.wmGravity);
+      if (params.wmPad && params.wmPad !== 10) q.set('wm_pad', params.wmPad.toString());
+    }
+
     if (params.debug) q.set('debug', params.debug);
     if (signature) q.set('s', signature);
 
@@ -78,7 +114,7 @@ export const App: React.FC = () => {
     return `${window.location.origin}/v1/images/${selectedPath}?fit=inside`;
   }, [selectedPath]);
 
-  // Measure telemetry by issuing a HEAD/GET request
+  // Measure telemetry by issuing a GET request
   const refreshTelemetry = useCallback(async () => {
     try {
       setLoading(true);
@@ -87,17 +123,37 @@ export const App: React.FC = () => {
       const elapsed = performance.now() - start;
 
       if (res.ok) {
-        const blob = await res.blob();
+        const contentType = res.headers.get('Content-Type') || '';
         const durationHeader = res.headers.get('X-Transform-Duration-Ms');
         const cacheHeader = res.headers.get('X-Cache') || 'ORIGIN_COMPUTE';
         const etag = res.headers.get('ETag') || '';
+
+        // If JSON response (e.g. lqip=json)
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          setTelemetry({
+            originalBytes: 150 * 1024,
+            transformedBytes: JSON.stringify(json).length,
+            originalWidth: 800,
+            originalHeight: 800,
+            outputWidth: json.width || 16,
+            outputHeight: json.height || 16,
+            durationMs: durationHeader ? parseFloat(durationHeader) : elapsed,
+            cacheSource: cacheHeader,
+            etag,
+            contentType,
+          });
+          return;
+        }
+
+        const blob = await res.blob();
 
         // Read image natural dimensions
         const img = new Image();
         img.src = URL.createObjectURL(blob);
         img.onload = () => {
           setTelemetry({
-            originalBytes: 150 * 1024, // baseline fallback
+            originalBytes: 150 * 1024,
             transformedBytes: blob.size,
             originalWidth: 800,
             originalHeight: 800,
@@ -111,7 +167,7 @@ export const App: React.FC = () => {
         };
       }
     } catch {
-      // Ignored
+      // Ignored in dev
     } finally {
       setLoading(false);
     }
@@ -162,14 +218,14 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <h1 className="font-bold tracking-tight text-sm text-zinc-100">imgscale</h1>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-700/50 text-indigo-300">
-                v1.0.0
+                v1.1.0
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 text-emerald-300">
                 &lt; 35MB RAM
               </span>
             </div>
             <p className="text-[11px] text-zinc-400">
-              Real-time SIMD Resizing & Sobel Saliency Smart Crop Studio
+              Real-time SIMD Resizing, Sobel Saliency & Smart Focal Crop Studio
             </p>
           </div>
         </div>
@@ -198,11 +254,15 @@ export const App: React.FC = () => {
 
       {/* Main Workspace Layout */}
       <main className="flex-1 p-4 max-w-[1728px] mx-auto w-full flex flex-col gap-4">
-        {/* Source Image Selector */}
+        {/* Source Image Selector & Uploader */}
         <SourceExplorer
           selectedPath={selectedPath}
           onSelect={(p) => setSelectedPath(p)}
           presets={presets}
+          onUploadSuccess={(item) => {
+            setPresets((prev) => [item, ...prev]);
+            setSelectedPath(item.path);
+          }}
         />
 
         {/* Primary Two-Column Cockpit */}
@@ -226,10 +286,23 @@ export const App: React.FC = () => {
               telemetry={telemetry}
               loading={loading}
               onRefresh={refreshTelemetry}
+              focalPoint={{ x: params.fpX, y: params.fpY }}
+              focalPointActive={params.gravity === 'fp'}
+              onFocalPointSelect={(x, y) => {
+                setParams((prev) => ({
+                  ...prev,
+                  gravity: 'fp',
+                  fpX: x,
+                  fpY: y,
+                }));
+              }}
             />
 
             {/* Live Cache & System Telemetry */}
             <CacheMetrics />
+
+            {/* Cloudinary vs imgscale Cost Savings Calculator */}
+            <CostCalculator />
           </div>
         </div>
       </main>
